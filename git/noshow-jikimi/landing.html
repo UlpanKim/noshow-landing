@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>노쇼지킴이 | 전화예약 그대로, 노쇼만 잡아드립니다</title>
+<!--
+  ★ 게시 방법 (Google Sites)
+  1. sites.google.com → 새 사이트 만들기
+  2. 삽입 → 「삽입 코드」 → 이 파일 전체 내용을 붙여넣기 → 삽입
+  3. 아래 ★ 표시 3곳만 교체하면 끝납니다.
+
+  ★ 교체 1: WEBHOOK_URL (n8n 세팅 후 실제 주소로)
+  ★ 교체 2: DEMO_PAGE_URL (데모 페이지 URL)
+  ★ 교체 3: CONTACT_PHONE (사장님 문의 전화번호)
+-->
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif; color:#222; background:#fff; line-height:1.6; }
+  .wrap { max-width:640px; margin:0 auto; padding:0 20px; }
+  section { padding:44px 0; }
+  .hero { background:linear-gradient(160deg,#1a1a2e 0%,#2d2d5e 100%); color:#fff; text-align:center; padding:56px 0 48px; }
+  .hero .badge { display:inline-block; background:#ffcf3f; color:#1a1a2e; font-weight:800; font-size:13px; padding:6px 14px; border-radius:20px; margin-bottom:16px; }
+  .hero h1 { font-size:26px; line-height:1.4; margin-bottom:12px; }
+  .hero h1 .hl { color:#ffcf3f; }
+  .hero p { font-size:15px; opacity:.85; margin-bottom:24px; }
+  .btn { display:block; width:100%; padding:16px; border-radius:12px; font-size:17px; font-weight:800; text-align:center; text-decoration:none; border:none; cursor:pointer; }
+  .btn-yellow { background:#ffcf3f; color:#1a1a2e; }
+  .btn-dark { background:#1a1a2e; color:#fff; }
+  .btn-outline { background:#fff; color:#1a1a2e; border:2px solid #1a1a2e; }
+  .btn + .btn { margin-top:10px; }
+  .stat-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-top:20px; }
+  .stat { background:#f6f6fa; border-radius:12px; padding:16px 8px; text-align:center; }
+  .stat .num { font-size:24px; font-weight:800; color:#e14b4b; }
+  .stat .lbl { font-size:12px; color:#666; margin-top:4px; }
+  h2 { font-size:21px; margin-bottom:16px; text-align:center; }
+  h2 .hl { color:#e14b4b; }
+  .card { background:#f6f6fa; border-radius:14px; padding:18px; margin-bottom:12px; }
+  .card b { display:block; margin-bottom:6px; font-size:16px; }
+  .card p { font-size:14px; color:#555; }
+  .step { display:flex; gap:14px; margin-bottom:18px; align-items:flex-start; }
+  .step .n { flex:0 0 36px; height:36px; border-radius:50%; background:#1a1a2e; color:#fff; font-weight:800; display:flex; align-items:center; justify-content:center; }
+  .step .t b { display:block; font-size:16px; margin-bottom:4px; }
+  .step .t p { font-size:14px; color:#555; }
+  .price-grid { display:grid; gap:12px; }
+  .price { border:2px solid #e8e8f0; border-radius:14px; padding:20px; }
+  .price.hot { border-color:#ffcf3f; background:#fffdf4; }
+  .price .tag { font-size:12px; font-weight:800; color:#fff; background:#e14b4b; border-radius:6px; padding:3px 8px; display:inline-block; margin-bottom:8px; }
+  .price h3 { font-size:18px; margin-bottom:4px; }
+  .price .amt { font-size:26px; font-weight:800; margin:8px 0; }
+  .price ul { list-style:none; font-size:14px; color:#555; }
+  .price ul li { padding:4px 0; }
+  .price ul li::before { content:"✓ "; color:#2e9e5b; font-weight:800; }
+  .note { font-size:13px; color:#888; text-align:center; margin-top:12px; }
+  form .field { margin-bottom:14px; }
+  form label { display:block; font-size:14px; font-weight:700; margin-bottom:6px; }
+  form input, form select { width:100%; padding:14px; border:2px solid #e0e0ea; border-radius:10px; font-size:16px; }
+  form input:focus, form select:focus { outline:none; border-color:#1a1a2e; }
+  .form-box { background:#f6f6fa; border-radius:16px; padding:24px 20px; }
+  .form-box h2 { margin-bottom:6px; }
+  .form-box .sub { text-align:center; font-size:14px; color:#666; margin-bottom:20px; }
+  #form-ok, #form-fail { display:none; text-align:center; padding:20px 0; }
+  #form-ok .big { font-size:40px; margin-bottom:10px; }
+  .faq { border-bottom:1px solid #eee; padding:14px 0; }
+  .faq b { font-size:15px; display:block; margin-bottom:6px; }
+  .faq p { font-size:14px; color:#555; }
+  footer { background:#f6f6fa; padding:28px 0; font-size:12px; color:#999; text-align:center; }
+  .chat-ex { background:#bacee0; border-radius:14px; padding:16px; margin-top:16px; }
+  .bubble { max-width:85%; padding:10px 14px; border-radius:14px; font-size:14px; margin-bottom:8px; }
+  .bubble.bot { background:#fff; }
+  .bubble.user { background:#ffeb33; margin-left:auto; }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="wrap">
+    <span class="badge">🛡️ 노쇼지킴이 — 식당 · 병원 · 학원 사장님 전용</span>
+    <h1>노쇼 1건에 <span class="hl">44만원</span>이<br>그냥 나갑니다</h1>
+    <p>지금 하시는 전화 예약, 그대로 두세요.<br>그 위에 <b style="color:#ffcf3f;">노쇼 방지만</b> 얹어드립니다.</p>
+    <a class="btn btn-yellow" href="#trial">2주 시범 운영 신청하기</a>
+    <a class="btn btn-outline" style="margin-top:10px;background:transparent;color:#fff;border-color:#fff;" href="https://auto.realinsight.kr" target="_blank">사장님 입력폼 미리보기</a>
+  </div>
+</div>
+
+<!-- STATS -->
+<section>
+  <div class="wrap">
+    <h2>사장님들 <span class="hl">65%</span>가 겪는 일입니다</h2>
+    <div class="stat-grid">
+      <div class="stat"><div class="num">65%</div><div class="lbl">3년간 노쇼 경험<br>(외식업체)</div></div>
+      <div class="stat"><div class="num">44만원</div><div class="lbl">노쇼 1건당<br>평균 손실</div></div>
+      <div class="stat"><div class="num">95%</div><div class="lbl">아직도 전화로<br>예약 접수</div></div>
+    </div>
+    <p class="note">출처: 중소벤처기업부 소상공인 노쇼 피해 실태조사</p>
+  </div>
+</section>
+
+<!-- DIFFERENTIATION -->
+<section style="padding-top:0;">
+  <div class="wrap">
+    <div class="card" style="background:#1a1a2e;">
+      <b style="color:#ffcf3f;">📢 먼저 말씀드립니다</b>
+      <p style="color:#ddd;font-size:14px;margin-top:10px;">❌ 예약을 카톡으로 옮기라는 게 <b style="display:inline;color:#fff;">아닙니다</b><br>⭕ 전화 예약 그대로, 확인 알림만 자동으로 갑니다</p>
+      <p style="color:#ddd;font-size:14px;margin-top:10px;">❌ 카카오 채널을 직접 만지실 필요 <b style="display:inline;color:#fff;">없습니다</b><br>⭕ 채널 세팅부터 운영까지 저희가 대행합니다</p>
+      <p style="color:#ddd;font-size:14px;margin-top:10px;">❌ 비싼 프로그램 설치 <b style="display:inline;color:#fff;">아닙니다</b><br>⭕ 사장님은 매일 밤 리포트만 받으시면 됩니다</p>
+    </div>
+  </div>
+</section>
+
+<!-- WHO -->
+<section style="background:#fafafc;">
+  <div class="wrap">
+    <h2>이런 사장님께 필요합니다</h2>
+    <div class="card"><b>📞 전화로 예약받느라 일손이 모자란 식당·카페</b><p>영업 중에 걸려오는 예약 전화, 받아야 하나 말아야 하나 고민되시죠.</p></div>
+    <div class="card"><b>🌙 밤 10시 이후 문의를 놓치는 병원·학원</b><p>못 받은 카톡 하나가 다음날 빈 슬롯, 빈 상담이 됩니다.</p></div>
+    <div class="card"><b>😤 노쇼·노컨택에 스트레스받는 1인 자영업자</b><p>재료 준비해놓고 안 오면 그날 장사는 끝입니다.</p></div>
+  </div>
+</section>
+
+<!-- HOW -->
+<section>
+  <div class="wrap">
+    <h2>이렇게 <span class="hl">자동</span>으로 돕습니다</h2>
+    <div class="step"><div class="n">1</div><div class="t"><b>예약 접수 즉시 확인 발송</b><p>전화·카톡·폼으로 들어온 예약을 자동 정리하고 접수 확인 메시지를 보냅니다.</p></div></div>
+    <div class="step"><div class="n">2</div><div class="t"><b>전날·당일 확인 알림</b><p>"내일 7시 예약 맞으시죠?" 고객이 버튼 하나로 확정/취소. 취소되면 슬롯 자동 해제.</p></div></div>
+    <div class="step"><div class="n">3</div><div class="t"><b>사장님께 일일 리포트</b><p>매일 밤 오늘 예약 현황을 요약해서 보내드립니다. 미확정(노쇼 위험) 건은 따로 표시.</p></div></div>
+    <div class="chat-ex">
+      <div class="bubble bot">[맛집이름] 내일 예약 확인 💬<br>홍길동님, 내일(10/10) 19:00 4명 방문 확정인가요?<br>[확정 👍] [취소 😢]</div>
+      <div class="bubble user">확정 👍</div>
+      <div class="bubble bot">감사합니다! 내일 뵐게요 😊</div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section style="background:#fafafc;">
+  <div class="wrap">
+    <h2>요금 안내</h2>
+    <div class="price-grid">
+      <div class="price hot">
+        <span class="tag">2주 시범 운영 포함</span>
+        <h3>초기 세팅</h3>
+        <div class="amt">39만원<small style="font-size:14px;">/1회</small></div>
+        <ul><li>메신저 채널 개설·세팅 대행</li><li>알림 메시지 템플릿 기획·승인 대행</li><li>예약 접수 연동 (입력폼 + 시트)</li><li>2주 시범 운영 + 노쇼율 리포트</li></ul>
+      </div>
+    </div>
+    <h2 style="margin-top:36px;">시범 후 월 요금제 <span style="font-size:14px;color:#666;">(별도 계약)</span></h2>
+    <div class="price-grid">
+      <div class="price">
+        <h3>STANDARD</h3>
+        <div class="amt">29만원<small style="font-size:14px;">/월</small></div>
+        <ul><li>예약 리마인드 메시지 발송 운영</li><li>예약자 명단 정리·관리</li><li>월간 노쇼율 리포트</li></ul>
+      </div>
+      <div class="price hot">
+        <span class="tag">가장 많이 선택</span>
+        <h3>DELUXE</h3>
+        <div class="amt">49만원<small style="font-size:14px;">/월</small></div>
+        <ul><li>STANDARD 전부 포함</li><li>노쇼 시 재예약 유도 메시지</li><li>주간 리포트</li></ul>
+      </div>
+      <div class="price">
+        <h3>PREMIUM</h3>
+        <div class="amt">79만원<small style="font-size:14px;">/월</small></div>
+        <ul><li>DELUXE 전부 포함</li><li>업종 맞춤 시나리오</li><li>전담 매니저 실시간 대응</li></ul>
+      </div>
+    </div>
+    <p class="note">세팅비에 2주 시범 운영이 포함되어 있습니다. 효과 확인 후 월 요금제를 결정하세요.<br>알림톡 발송료 별도 (건당 약 10원, 실제 사용량만큼 발송 대행사에 직접 결제). 계좌이체·현금영수증 발행.<br>노쇼 1건(44만원)을 막는 데 알림 1건은 10원입니다.</p>
+  </div>
+</section>
+
+<!-- TRIAL FORM -->
+<section id="trial">
+  <div class="wrap">
+    <div class="form-box">
+      <h2>2주 시범 운영 신청</h2>
+      <p class="sub">세팅비 39만원에 2주 운영이 포함됩니다.<br>효과 확인 후 월 요금제를 결정하세요.</p>
+      <form id="trial-form" onsubmit="return submitTrial(event);">
+        <div class="field">
+          <label>상호명 *</label>
+          <input type="text" id="f-store" placeholder="예) 성수동 맛집" required>
+        </div>
+        <div class="field">
+          <label>업종 *</label>
+          <select id="f-cat" required>
+            <option value="">선택해주세요</option>
+            <option>음식점·카페</option>
+            <option>병원·치과·한의원</option>
+            <option>학원·공부방</option>
+            <option>미용·네일·필라테스</option>
+            <option>기타</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>성함 *</label>
+          <input type="text" id="f-name" placeholder="홍길동" required>
+        </div>
+        <div class="field">
+          <label>휴대폰 번호 *</label>
+          <input type="tel" id="f-phone" placeholder="010-1234-5678" required>
+        </div>
+        <button class="btn btn-dark" type="submit">시범 운영 신청하기</button>
+        <p class="note">신청하시면 확인 메시지와 상세 안내를 바로 보내드립니다.</p>
+      </form>
+      <div id="form-ok">
+        <div class="big">✅</div>
+        <b>신청이 접수됐습니다!</b>
+        <p style="font-size:14px;color:#555;margin-top:8px;">확인 메시지와 상세 안내를 보내드렸습니다.<br>문자를 확인해주세요.</p>
+      </div>
+      <div id="form-fail">
+        <div class="big">📞</div>
+        <b>온라인 접수에 실패했습니다</b>
+        <p style="font-size:14px;color:#555;margin-top:8px;">번거로우시겠지만 카카오 채널로 문의해주세요.<br><b>노쇼지킴이</b> 채널에서 "시범신청"을 보내주세요.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section style="background:#fafafc;">
+  <div class="wrap">
+    <h2>자주 묻는 질문</h2>
+    <div class="faq"><b>Q. 지금 전화 예약 방식이랑 충돌 안 나나요?</b><p>A. 전화는 그대로 받으시고, 자동화는 옆에서 돕는 구조입니다. 바꾸는 게 아니라 더하는 겁니다.</p></div>
+    <div class="faq"><b>Q. 알림톡 비용은 얼마나 드나요?</b><p>A. 건당 약 10원으로, 실제 발송량만큼 발송 대행사(알리고)에 직접 결제합니다. 월 1,000건 보내도 1만원 수준입니다. 저희 요금제와는 별도입니다.</p></div>
+    <div class="faq"><b>Q. 2주 시범 후에 의무가 있나요?</b><p>A. 없습니다. 효과 없다고 판단되시면 그냥 안 하시면 됩니다.</p></div>
+    <div class="faq"><b>Q. 컴퓨터를 잘 못 다뤄도 되나요?</b><p>A. 사장님이 만질 건 없습니다. 매일 밤 리포트만 카톡으로 받으시면 됩니다.</p></div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p>상호: 카르디엘 (서비스명: 노쇼지킴이) | 대표: (성명) | 사업자등록번호: (번호)<br>이 페이지의 통계 수치는 중소벤처기업부 실태조사를 인용한 것입니다.</p>
+  </div>
+</footer>
+
+<script>
+/* 시범 신청 → n8n 웹훅 (nginx /api/ 프록시 경유, CORS 우회) */
+var WEBHOOK_URL = "/api/trial-apply";
+
+function submitTrial(e) {
+  e.preventDefault();
+  var phone = document.getElementById('f-phone').value.replace(/[^0-9]/g, '');
+  if (!/^01[0-9]{8,9}$/.test(phone)) { alert('휴대폰 번호를 정확히 입력해주세요.'); return false; }
+  var data = {
+    store_name: document.getElementById('f-store').value.trim(),
+    category: document.getElementById('f-cat').value,
+    name: document.getElementById('f-name').value.trim(),
+    phone: phone,
+    submitted_at: new Date().toISOString(),
+    source: 'landing'
+  };
+  /* same-origin(/api 프록시)이라 no-cors 불필요 — res.ok 체크로 실패 감지 */
+  fetch(WEBHOOK_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }).then(function(res) {
+    if (!res.ok) { throw new Error('bad status ' + res.status); }
+    document.getElementById('trial-form').style.display = 'none';
+    document.getElementById('form-ok').style.display = 'block';
+    window.scrollTo(0, document.getElementById('trial').offsetTop);
+  }).catch(function() {
+    document.getElementById('trial-form').style.display = 'none';
+    document.getElementById('form-fail').style.display = 'block';
+  });
+  return false;
+}
+</script>
+</body>
+</html>
